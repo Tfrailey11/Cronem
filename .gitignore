@@ -1,0 +1,6 @@
+.env
+stored_names.txt
+venv/
+__pycache__/
+Checklist.txt
+*.egg-info/
