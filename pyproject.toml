@@ -3,7 +3,8 @@ name = "cronem"
 version = "0.1.0"
 dependencies = [
 	"kernel",
-	"python-dotenv"
+	"python-dotenv",
+	"requests",
 ]
 
 [project.scripts]
