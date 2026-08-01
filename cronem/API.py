@@ -36,7 +36,6 @@ def fetch_menu(hall, menu_slug, year, month, day):
 def get_today(data, date):
     for day in data.get('days', []):
         day_date = day.get('date')
-        #print(f'Comparing: {repr(day_date)} == {repr(date)} = {day_date == date}')
         if day_date == date:
             print(f'Today returned date: {day_date}')
             return day

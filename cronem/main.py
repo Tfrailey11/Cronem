@@ -18,9 +18,10 @@ slug = menu_slug(hour)
 hall = Hallsel()
 print(f'hall: {hall}')
 
-data = fetch_menu(hall, slug , now.strftime('%Y'), now.strftime('%m'), now.strftime('%d'))
+data = fetch_menu(hall, slug, now.strftime('%Y'), now.strftime('%m'), now.strftime('%d'))
+test_date = now.strftime('2026-07-30')
 
-today = get_today(data, date)
+today = get_today(data, test_date)
 print(f'Todays date: {date}')
 print(f'Today found: {today is not None}')
 
@@ -34,22 +35,33 @@ else:
     print('No menu found for today')
     MenuVer = False
 
-FoodInfo = None
 
-FoodName = None
+
 
 
 if MenuVer:
-    food = input('Type which item you ate: ')
-    if food:
-        for item in today.get('menu_items', []):
-            if item.get('food') and item['food']['name'] == food.title():
-                FoodName = (hall.title() + '-' + food)
-                FoodInfo = item['food']['rounded_nutrition_info']
-                print(FoodInfo)
-                break
-        else:
-            print("Could not find food item. Please run again and double check spelling!")
+    
+    todays_food_names = {
+            item['food']['name'].title()
+            for item in today.get('menu_items', [])
+            if item.get('food')
+    }
+
+    name_to_info = {
+            item['food']['name'].title() : item['food']['rounded_nutrition_info']
+            for item in today.get('menu_items', [])
+            if item.get('food')
+    }
+
+    foods = input('Type which item/s you ate, for multiple items seperate them with a comma: ')
+    FoodInfo = {}
+    if foods:
+        food_list = [item.strip().title() for item in foods.split(',')]
+
+        for food in food_list:
+            if food in todays_food_names:
+                FoodInfo[food] = name_to_info[food]
+                
 
 api_to_page_label = {
     'calories': 'Calories',
@@ -87,12 +99,14 @@ page_order = [
     'Potassium: g', 'Potassium: dv'
 ]
 
-NumberedFoodInfo = {}
-for api_key, page_label in api_to_page_label.items():
-    if api_key in FoodInfo and page_label in page_order:
-        page_index = page_order.index(page_label)
-        NumberedFoodInfo[page_index] = str(FoodInfo[api_key])
-
+AllNumberedFoodInfo = {}
+for food_name, nutrition in FoodInfo.items():
+    numbered = {}
+    for api_key, page_label in api_to_page_label.items():
+        if api_key in nutrition and page_label in page_order:
+            page_index = page_order.index(page_label)
+            numbered[page_index] = str(nutrition[api_key])
+    AllNumberedFoodInfo[food_name] = numbered
 
 
 
