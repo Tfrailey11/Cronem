@@ -21,7 +21,7 @@ print(f'hall: {hall}')
 data = fetch_menu(hall, slug, now.strftime('%Y'), now.strftime('%m'), now.strftime('%d'))
 test_date = now.strftime('2026-07-30')
 
-today = get_today(data, test_date)
+today = get_today(data, date)
 print(f'Todays date: {date}')
 print(f'Today found: {today is not None}')
 
