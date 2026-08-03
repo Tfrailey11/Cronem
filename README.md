@@ -1,21 +1,19 @@
 This is a CLI tool for students of UofSC columbia who want to track what they eat from the dining halls.
 
 
-Whats needed:
-Cronometer account
+## Whats needed:
+Cronometer account and
 Kernel API key (get one at https://www.kernel.sh/)
 
 
-Steps:
-Clone the repo:
+## Build setup:
+Clone the repo: git clone https://github.com/Tfrailey11/Cronem
+then change dir > cd Cronem
 
-git clone https://github.com/Tfrailey11/Cronem
-cd Cronem
-
-Install the CLI
+Install the CLI:
 pip install .
 
-How to run:
+## How to run:
 Run "Cronem login"
 It will prompt you for your Kernel API key, Cronometer email, and Cronometer password.
 After this, run "Cronem add", and you'll be prompted with one of the dining halls to select from
