@@ -1,32 +1,39 @@
-from dotenv import load_dotenv
+"""Credential loading and Cronometer login automation."""
+
+from __future__ import annotations
+
+import json
 import os
 from pathlib import Path
-import json
+
+import keyring
+from dotenv import load_dotenv
+
+APP_DIR = Path.home() / ".cronem"
+ENV_PATH = APP_DIR / ".env"
+KEYRING_SERVICE = "cronem"
 
 
-env_path = Path.home() / ".cronem" / ".env"
-load_dotenv(env_path)
+def load_credentials() -> tuple[str, str]:
+    load_dotenv(ENV_PATH)
+    username = os.getenv("CRONOMETER_USERNAME", "").strip()
+    password = keyring.get_password(KEYRING_SERVICE, username) if username else None
+    password = password or os.getenv("CRONOMETER_PASSWORD")  # Migration fallback.
+    if not username or not password:
+        raise RuntimeError("Cronometer credentials are missing. Run 'Cronem login' first.")
+    return username, password
 
 
-username = os.getenv('CRONOMETER_USERNAME')
-password= os.getenv('CRONOMETER_PASSWORD')
-
-
-
-safe_user = json.dumps(username)
-safe_password = json.dumps(password)
-
-login_steps = f"""
-        await page.goto('https://cronometer.com/login/')
-        await page.waitForTimeout(3000)
-        const loginTitle = await page.title()
-        if (loginTitle !== 'Cronometer Login') {{
-            await page.goto('https://cronometer.com/#custom-foods')
-        }} else {{
-            await page.fill('#username', {safe_user})
-            await page.fill('#password', {safe_password})
-            await page.click('#login-button')
-            await page.waitForTimeout(3000)
-            await page.goto('https://cronometer.com/#custom-foods')
+def build_login_steps() -> str:
+    username, password = load_credentials()
+    return f"""
+        await page.goto('https://cronometer.com/login/');
+        await page.waitForLoadState('domcontentloaded');
+        if (await page.locator('#username').isVisible()) {{
+            await page.fill('#username', {json.dumps(username)});
+            await page.fill('#password', {json.dumps(password)});
+            await page.click('#login-button');
         }}
-        await page.waitForTimeout(3000)"""
+        await page.goto('https://cronometer.com/#custom-foods');
+        await page.locator('text=CREATE FOOD').waitFor({{ state: 'visible', timeout: 15000 }});
+    """

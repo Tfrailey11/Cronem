@@ -1,24 +1,44 @@
-This is a CLI tool for students of UofSC columbia who want to track what they eat from the dining halls.
+# Cronem
 
+Cronem is an unofficial CLI for UofSC Columbia students who want to add dining-hall foods to Cronometer.
 
-## Whats needed:
-Cronometer account and
-Kernel API key (get one at https://www.kernel.sh/)
+## Requirements
 
+- Python 3.10 or newer
+- A Cronometer account
+- A [Kernel](https://www.kernel.sh/) API key
 
-## Build setup:
-Clone the repo: git clone https://github.com/Tfrailey11/Cronem
-then change dir > cd Cronem
+## Install
 
-Install the CLI:
-pip install .
+```console
+git clone https://github.com/Tfrailey11/Cronem
+cd Cronem
+python -m pip install .
+```
 
-## How to run:
-Run "Cronem login"
-It will prompt you for your Kernel API key, Cronometer email, and Cronometer password.
-After this, run "Cronem add", and you'll be prompted with one of the dining halls to select from
-After selecting your dining hall, type in the name of the food you ate, matching the listed options, and Cronem will add it to your custom foods and diary.
+For development:
 
+```console
+python -m pip install -e '.[dev]'
+pytest
+```
 
+## Use
 
-This is an unofficial, personal-use tool, users of this tool are responsible for their compliance with Cronometers Tos. I am not affiliated with Cronometer.
+Run `Cronem login` once. The Kernel key and username are written to a private configuration file; the Cronometer password is stored in the operating system keyring.
+
+```console
+Cronem halls
+Cronem menu --hall garnet-station --meal lunch
+Cronem add
+Cronem add --dry-run
+Cronem doctor
+```
+
+`Cronem add` supports numbered food selection, lets you override the inferred meal, previews the selection, and asks for confirmation before opening a browser session.
+
+## Data and privacy
+
+Generated database files and local experiments under `DataBase/` are ignored by Git and are not part of the installed application. Never commit API keys or account credentials.
+
+This is an unofficial personal-use tool. Users are responsible for complying with Cronometer's terms of service. This project is not affiliated with Cronometer.
