@@ -32,10 +32,13 @@ Cronem halls
 Cronem menu --hall garnet-station --meal lunch
 Cronem add
 Cronem add --dry-run
+Cronem add --review-servings
 Cronem doctor
 ```
 
 `Cronem add` supports numbered food selection, lets you override the inferred meal, previews the selection, and asks for confirmation before opening a browser session.
+
+Nutrislice sometimes describes food by a bulk recipe serving, such as one pound or one quart. Menu listings now show the full source serving and calories. Use `--review-servings` to replace it with what you ate (for example, `2 oz`); Cronem converts compatible units and scales every nutrient before showing the final preview.
 
 ## Data and privacy
 

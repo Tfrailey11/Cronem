@@ -64,12 +64,16 @@ def _food_steps(food_name: str, food_values: dict[int, str], cache_hint: bool) -
     """
 
 
-def run_add(*, dry_run: bool = False, assume_yes: bool = False, verbose: bool = False) -> int:
-    hall, values = collect_foods()
+def run_add(
+    *, dry_run: bool = False, assume_yes: bool = False, verbose: bool = False, review_serving_sizes: bool = False
+) -> int:
+    hall, values = collect_foods(review_serving_sizes=review_serving_sizes)
     if not values:
         print("No foods selected; nothing was changed.")
         return 0
-    print(f"\n{hall.replace('-', ' ').title()}: {', '.join(values)}")
+    print(f"\n{hall.replace('-', ' ').title()}:")
+    for food, details in values.items():
+        print(f"  {food} — {details['serving']}")
     if dry_run:
         print(json.dumps(values, indent=2))
         return 0
@@ -83,27 +87,36 @@ def run_add(*, dry_run: bool = False, assume_yes: bool = False, verbose: bool = 
     kernel = Kernel(api_key=api_key, max_retries=1, timeout=120.0)
     known_names = _stored_names()
     failures = 0
-    for food, food_values in values.items():
-        full_name = f"{hall.replace('-', ' ').title()} {food}"
-        print(f"Adding {full_name}...")
-        browser = kernel.browsers.create()
-        response = None
-        try:
-            response = kernel.browsers.playwright.execute(
-                id=browser.session_id,
-                code=build_login_steps() + _food_steps(full_name, food_values, full_name in known_names),
-            )
-            if response.error:
-                raise RuntimeError(str(response.error))
-            _remember_name(full_name)
-            print(f"Added {full_name}.")
-            if verbose:
-                print(response.result)
-        except Exception as exc:  # noqa: BLE001 - isolate failures so remaining foods can continue.
-            failures += 1
-            print(f"Could not add {full_name}: {exc}")
-            if verbose and response and response.stderr:
-                print(response.stderr)
-        finally:
-            kernel.browsers.delete_by_id(browser.session_id)
+    browser = kernel.browsers.create()
+    try:
+        login_response = kernel.browsers.playwright.execute(id=browser.session_id, code=build_login_steps())
+        if login_response.error:
+            raise RuntimeError(f"Cronometer login failed: {login_response.error}")
+        for food, details in values.items():
+            # Cronometer's custom-food editor defaults to one serving. Keep the
+            # reviewed quantity in the name so that "one serving" remains clear.
+            full_name = f"{hall.replace('-', ' ').title()} {food} ({details['serving']})"
+            print(f"Adding {full_name}...")
+            response = None
+            try:
+                response = kernel.browsers.playwright.execute(
+                    id=browser.session_id,
+                    code=_food_steps(full_name, details["nutrition"], full_name in known_names),
+                )
+                if response.error:
+                    raise RuntimeError(str(response.error))
+                _remember_name(full_name)
+                print(f"Added {full_name}.")
+                if verbose:
+                    print(response.result)
+            except Exception as exc:  # noqa: BLE001 - isolate failures so remaining foods can continue.
+                failures += 1
+                print(f"Could not add {full_name}: {exc}")
+                if verbose and response and response.stderr:
+                    print(response.stderr)
+    except Exception as exc:  # noqa: BLE001 - provide a useful CLI failure for session/login errors.
+        failures = len(values)
+        print(f"Could not start Cronometer import: {exc}")
+    finally:
+        kernel.browsers.delete_by_id(browser.session_id)
     return 1 if failures else 0

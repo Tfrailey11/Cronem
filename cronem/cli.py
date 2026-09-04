@@ -23,6 +23,11 @@ def build_parser() -> argparse.ArgumentParser:
     add.add_argument("--dry-run", action="store_true")
     add.add_argument("--yes", action="store_true")
     add.add_argument("--verbose", action="store_true")
+    add.add_argument(
+        "--review-servings",
+        action="store_true",
+        help="show Nutrislice serving sizes and optionally replace them, scaling nutrition",
+    )
     commands.add_parser("halls", help="list supported dining halls")
     menu = commands.add_parser("menu", help="show a dining menu")
     menu.add_argument("--hall", choices=HALLS.values(), required=True)
@@ -87,7 +92,12 @@ def main() -> int:
         if args.command == "add":
             from .Kernel import run_add
 
-            return run_add(dry_run=args.dry_run, assume_yes=args.yes, verbose=args.verbose)
+            return run_add(
+                dry_run=args.dry_run,
+                assume_yes=args.yes,
+                verbose=args.verbose,
+                review_serving_sizes=args.review_servings,
+            )
         if args.command == "halls":
             for number, hall in HALLS.items():
                 print(f"{number}: {hall}")
