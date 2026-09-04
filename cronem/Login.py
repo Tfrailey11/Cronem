@@ -33,7 +33,18 @@ def build_login_steps() -> str:
             await page.fill('#username', {json.dumps(username)});
             await page.fill('#password', {json.dumps(password)});
             await page.click('#login-button');
+            await page.waitForURL(
+                url => !url.pathname.startsWith('/login'),
+                {{ timeout: 30000 }}
+            );
         }}
         await page.goto('https://cronometer.com/#custom-foods');
         await page.locator('text=CREATE FOOD').waitFor({{ state: 'visible', timeout: 15000 }});
     """
+
+
+def login(playwright: object, session_id: str, steps: str) -> None:
+    """Log the browser session into Cronometer before any food automation runs."""
+    response = playwright.execute(id=session_id, code=steps)
+    if response.error:
+        raise RuntimeError(f"Cronometer login failed: {response.error}")

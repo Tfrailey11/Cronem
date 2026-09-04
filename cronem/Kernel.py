@@ -9,7 +9,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from kernel import Kernel
 
-from .Login import ENV_PATH, build_login_steps
+from .Login import ENV_PATH, build_login_steps, login
 from .main import collect_foods
 
 STATE_PATH = Path.home() / ".cronem" / "stored_names.txt"
@@ -32,6 +32,7 @@ def _food_steps(food_name: str, food_values: dict[int, str], cache_hint: bool) -
     return f"""
         const foodName = {json.dumps(food_name)};
         const searchInput = page.locator('input[placeholder="Search your foods..."]');
+        await searchInput.waitFor({{ state: 'visible', timeout: 15000 }});
         await searchInput.fill(foodName);
         const result = page.locator('div[role="button"]', {{ hasText: foodName }}).first();
         let exists = false;
@@ -45,14 +46,19 @@ def _food_steps(food_name: str, food_values: dict[int, str], cache_hint: bool) -
             await page.locator('text=CREATE FOOD').click();
             const xpath = 'xpath=//div[contains(@class,"gwt-Label") and text()="Food Name"]' +
                 '/following-sibling::div[1]//input';
-            await page.locator(xpath).fill(foodName);
+            const nameInput = page.locator(xpath);
+            await nameInput.click();
+            await nameInput.fill('');
+            await nameInput.pressSequentially(foodName, {{ delay: 50 }});
             const boxes = page.locator('.GHL1WBHBGJ.admin-edit-box');
             const values = {json.dumps(food_values)};
             for (const [i, val] of Object.entries(values)) {{
                 const input = boxes.nth(Number(i));
                 await input.locator('xpath=preceding-sibling::div[1]').click();
+                await page.waitForTimeout(200);
                 await input.fill(val);
                 await page.keyboard.press('Tab');
+                await page.waitForTimeout(200);
             }}
             await page.locator('text=SAVE CHANGES').click();
         }}
@@ -61,6 +67,11 @@ def _food_steps(food_name: str, food_values: dict[int, str], cache_hint: bool) -
         await addToDiary.first().click();
         await addToDiary.last().waitFor({{ state: 'visible', timeout: 10000 }});
         await addToDiary.last().click();
+        await page.waitForTimeout(1000);
+        const backButton = page.locator('text=BACK TO FOODS LIST');
+        await backButton.waitFor({{ state: 'visible', timeout: 10000 }});
+        await backButton.click();
+        await page.locator('text=CREATE FOOD').waitFor({{ state: 'visible', timeout: 10000 }});
     """
 
 
@@ -89,9 +100,8 @@ def run_add(
     failures = 0
     browser = kernel.browsers.create()
     try:
-        login_response = kernel.browsers.playwright.execute(id=browser.session_id, code=build_login_steps())
-        if login_response.error:
-            raise RuntimeError(f"Cronometer login failed: {login_response.error}")
+        login_steps = build_login_steps()
+        login(kernel.browsers.playwright, browser.session_id, login_steps)
         for food, details in values.items():
             # Cronometer's custom-food editor defaults to one serving. Keep the
             # reviewed quantity in the name so that "one serving" remains clear.
